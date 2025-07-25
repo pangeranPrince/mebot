@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "1.0.2",
+  "version": "1.0.1",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {

@@ -13,13 +13,44 @@ const QRCode = require('qrcode');
 let mainWindow;
 let bot;
 
+// --- FUNGSI BARU UNTUK MENGIRIM LOG KE TAMPILAN ---
+function sendLog(message) {
+    if (mainWindow) {
+        mainWindow.webContents.send('log-message', `[Updater] ${message}`);
+    }
+}
+
+// --- TAMBAHKAN LOGGING UNTUK AUTO UPDATER ---
+autoUpdater.on('checking-for-update', () => {
+    sendLog('Mencari pembaruan...');
+});
+autoUpdater.on('update-available', (info) => {
+    sendLog(`Pembaruan tersedia: v${info.version}`);
+});
+autoUpdater.on('update-not-available', (info) => {
+    sendLog('Tidak ada pembaruan yang tersedia.');
+});
+autoUpdater.on('error', (err) => {
+    sendLog(`Error saat memperbarui: ${err.message}`);
+});
+autoUpdater.on('download-progress', (progressObj) => {
+    let log_message = `Mengunduh: ${progressObj.percent.toFixed(2)}%`;
+    log_message = log_message + ` (${(progressObj.bytesPerSecond / 1024).toFixed(2)} KB/s)`;
+    sendLog(log_message);
+});
+autoUpdater.on('update-downloaded', (info) => {
+    sendLog(`Pembaruan v${info.version} telah diunduh. Aplikasi akan di-restart untuk instalasi.`);
+    // Notifikasi default akan muncul di sini untuk me-restart
+});
+// ------------------------------------------------
+
 const API_BASE_URL = 'https://us-central1-bot-lisensi-saya.cloudfunctions.net';
 
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1000,
         height: 750,
-        icon: path.join(__dirname, 'logo.ico'), // <-- DIUBAH
+        icon: path.join(__dirname, 'logo.ico'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -34,6 +65,7 @@ function createWindow() {
 app.whenReady().then(() => {
     createWindow();
     
+    // Sekarang kita panggil pengecekan setelah window dibuat
     autoUpdater.checkForUpdatesAndNotify();
 });
 
@@ -41,7 +73,7 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
-// ... Sisa kode main.js Anda tetap sama ...
+// ... Sisa kode Anda yang lain tetap sama ...
 // --- Handler untuk Login & Pendaftaran (Menghubungi Server) ---
 ipcMain.handle('login-attempt', async (event, { email, password }) => {
     try {
