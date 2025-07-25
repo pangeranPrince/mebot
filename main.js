@@ -13,14 +13,14 @@ const QRCode = require('qrcode');
 let mainWindow;
 let bot;
 
-// --- FUNGSI BARU UNTUK MENGIRIM LOG KE TAMPILAN ---
+// --- FUNGSI UNTUK MENGIRIM LOG KE TAMPILAN ---
 function sendLog(message) {
     if (mainWindow) {
         mainWindow.webContents.send('log-message', `[Updater] ${message}`);
     }
 }
 
-// --- TAMBAHKAN LOGGING UNTUK AUTO UPDATER ---
+// --- LOGGING UNTUK AUTO UPDATER ---
 autoUpdater.on('checking-for-update', () => {
     sendLog('Mencari pembaruan...');
 });
@@ -38,9 +38,25 @@ autoUpdater.on('download-progress', (progressObj) => {
     log_message = log_message + ` (${(progressObj.bytesPerSecond / 1024).toFixed(2)} KB/s)`;
     sendLog(log_message);
 });
+
+// --- DIUBAH: Tampilkan Dialog Konfirmasi Manual ---
 autoUpdater.on('update-downloaded', (info) => {
-    sendLog(`Pembaruan v${info.version} telah diunduh. Aplikasi akan di-restart untuk instalasi.`);
-    // Notifikasi default akan muncul di sini untuk me-restart
+    sendLog(`Pembaruan v${info.version} telah diunduh.`);
+    
+    dialog.showMessageBox({
+        type: 'info',
+        title: 'Pembaruan Tersedia',
+        message: `Versi baru MEBOT (v${info.version}) telah siap.`,
+        detail: 'Aplikasi akan ditutup untuk melakukan pembaruan.',
+        buttons: ['Restart Sekarang', 'Nanti'],
+        defaultId: 0, // Tombol "Restart Sekarang" menjadi default
+        cancelId: 1   // Jika dialog ditutup, anggap memilih "Nanti"
+    }).then(result => {
+        // 'result.response' akan berisi indeks tombol yang diklik (0 untuk "Restart Sekarang")
+        if (result.response === 0) {
+            autoUpdater.quitAndInstall();
+        }
+    });
 });
 // ------------------------------------------------
 
@@ -65,15 +81,14 @@ function createWindow() {
 app.whenReady().then(() => {
     createWindow();
     
-    // Sekarang kita panggil pengecekan setelah window dibuat
-    autoUpdater.checkForUpdatesAndNotify();
+    // Kita tidak lagi menggunakan AndNotify() karena kita menangani notifikasi sendiri
+    autoUpdater.checkForUpdates(); 
 });
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
-// ... Sisa kode Anda yang lain tetap sama ...
 // --- Handler untuk Login & Pendaftaran (Menghubungi Server) ---
 ipcMain.handle('login-attempt', async (event, { email, password }) => {
     try {

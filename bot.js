@@ -109,7 +109,7 @@ class WhatsAppBot extends EventEmitter {
                 }
 
                 const sendTimeStr = new Date(Date.now() + delayMs).toLocaleTimeString('id-ID');
-                this.emit('log', `📌 Menjadwalkan "${item.id}" untuk dikirim pada ~${sendTimeStr}`);
+                this.emit('log', `📌 jadwal "${item.id}" dikirim ~${sendTimeStr}`);
 
                 const job = setTimeout(async () => {
                     this.emit('log', `🚀 Mengirim pesan terjadwal: "${item.id}"`);
