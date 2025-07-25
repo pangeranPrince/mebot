@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>MEBOT v1.0.3</title> 
+    <title>MEBOT v1.0.4</title> 
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -100,6 +100,17 @@
             <label for="edit-content">Content / Caption</label>
             <textarea id="edit-content" rows="6"></textarea>
             <div class="modal-buttons"><button id="btn-save">Save</button><button id="btn-cancel">Cancel</button></div>
+        </div>
+    </div>
+
+    <div id="update-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="width: 450px; text-align: center;">
+            <h3 id="update-title">Pembaruan Tersedia!</h3>
+            <p id="update-message" style="margin-bottom: 25px;">Versi baru MEBOT telah diunduh. Mulai ulang aplikasi untuk menginstal.</p>
+            <div class="modal-buttons" style="justify-content: center;">
+                <button id="btn-update-later" style="background-color: #6c757d;">Nanti</button>
+                <button id="btn-update-now" style="background-color: var(--blue);">Update & Restart</button>
+            </div>
         </div>
     </div>
 

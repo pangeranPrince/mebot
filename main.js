@@ -13,14 +13,13 @@ const QRCode = require('qrcode');
 let mainWindow;
 let bot;
 
-// --- FUNGSI UNTUK MENGIRIM LOG KE TAMPILAN ---
 function sendLog(message) {
     if (mainWindow) {
         mainWindow.webContents.send('log-message', `[Updater] ${message}`);
     }
 }
 
-// --- LOGGING UNTUK AUTO UPDATER ---
+// --- KONFIGURASI AUTO UPDATER ---
 autoUpdater.on('checking-for-update', () => sendLog('Mencari pembaruan...'));
 autoUpdater.on('update-available', (info) => sendLog(`Pembaruan tersedia: v${info.version}`));
 autoUpdater.on('update-not-available', (info) => sendLog('Tidak ada pembaruan yang tersedia.'));
@@ -30,8 +29,12 @@ autoUpdater.on('download-progress', (progressObj) => {
     log_message = log_message + ` (${(progressObj.bytesPerSecond / 1024).toFixed(2)} KB/s)`;
     sendLog(log_message);
 });
+// DIUBAH: Saat update selesai diunduh, kirim event ke renderer
 autoUpdater.on('update-downloaded', (info) => {
-    sendLog(`Pembaruan v${info.version} telah diunduh. Aplikasi akan di-restart untuk instalasi.`);
+    sendLog(`Pembaruan v${info.version} telah diunduh. Menunggu konfirmasi pengguna.`);
+    if (mainWindow) {
+        mainWindow.webContents.send('update-ready', info.version);
+    }
 });
 // ------------------------------------------------
 
@@ -55,11 +58,17 @@ function createWindow() {
 
 app.whenReady().then(() => {
     createWindow();
-    autoUpdater.checkForUpdatesAndNotify();
+    // DIUBAH: Panggil checkForUpdates secara manual agar tidak ada notif default
+    autoUpdater.checkForUpdates();
 });
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
+});
+
+// BARU: Handler untuk memulai instalasi saat diminta oleh renderer
+ipcMain.on('install-update', () => {
+    autoUpdater.quitAndInstall();
 });
 
 
@@ -113,7 +122,6 @@ ipcMain.handle('select-file', async () => {
         filters: [ { name: 'Media', extensions: ['jpg', 'png', 'mp4', 'pdf'] } ]
     });
     if (result.canceled) return null;
-    // Kembalikan path absolut, ini sangat penting untuk build produksi
     return result.filePaths[0]; 
 });
 
@@ -123,13 +131,8 @@ ipcMain.on('start-bot', () => {
         mainWindow.webContents.send('log-message', 'INFO: Bot sudah berjalan.');
         return;
     }
-    
-    // Tentukan path untuk sesi WhatsApp di dalam folder userData
     const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth');
-    
-    // Berikan path tersebut saat membuat instance bot baru
     bot = new WhatsAppBot(sessionPath);
-    
     bot.on('qr', (qr) => {
         QRCode.toDataURL(qr, (err, url) => {
             if (err) return;
@@ -160,7 +163,6 @@ ipcMain.on('stop-bot', () => {
 
 ipcMain.on('reset-wa', () => {
     if (bot) { bot.stop(); bot = null; }
-    // Pastikan path yang dihapus sama dengan yang digunakan untuk membuat bot
     const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth');
     if (fs.existsSync(sessionPath)) {
         fs.rmSync(sessionPath, { recursive: true, force: true });

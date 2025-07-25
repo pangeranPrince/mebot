@@ -57,7 +57,7 @@ btnLogin.addEventListener('click', async () => {
 
     if (result.success) {
         showScreen(mainAppScreen);
-        loadScheduleTable(); // Ini sekarang akan memuat dari messages.json
+        loadScheduleTable(); 
     } else {
         loginError.textContent = result.message;
         loginError.classList.remove('hidden');
@@ -230,6 +230,7 @@ btnRunSender.addEventListener('click', () => {
 
 // --- Handler dari Main Process ---
 window.api.on('log-message', (message) => { addLog(message); });
+
 window.api.on('display-qr', (url) => {
     logArea.value = '';
     qrContainer.innerHTML = '';
@@ -238,14 +239,17 @@ window.api.on('display-qr', (url) => {
     qrContainer.appendChild(img);
     qrContainer.classList.remove('hidden');
 });
+
 window.api.on('bot-ready', () => {
     qrContainer.classList.add('hidden');
     btnRunSender.disabled = false;
 });
+
 window.api.on('bot-stopped', () => {
     btnRunSender.disabled = true;
     document.getElementById('group-list').innerHTML = '<p>Bot dihentikan.</p>';
 });
+
 window.api.on('update-groups', (groups) => {
     const groupListContainer = document.getElementById('group-list');
     groupListContainer.innerHTML = '';
@@ -259,4 +263,29 @@ window.api.on('update-groups', (groups) => {
         label.innerHTML = `<input type="checkbox" class="group-checkbox" value="${group.id}"> ${group.name}`;
         groupListContainer.appendChild(label);
     });
+});
+
+// BARU: Handler untuk menampilkan pop-up update kustom
+window.api.on('update-ready', (version) => {
+    const modal = document.getElementById('update-modal');
+    const title = document.getElementById('update-title');
+    const message = document.getElementById('update-message');
+    const btnLater = document.getElementById('btn-update-later');
+    const btnNow = document.getElementById('btn-update-now');
+
+    title.textContent = `Update MEBOT v${version}`;
+    message.textContent = `Versi ${version} telah siap. Mulai ulang aplikasi untuk menyelesaikan pembaruan.`;
+    
+    // Fungsi untuk menutup modal
+    const closeModal = () => modal.classList.add('hidden');
+
+    // Tampilkan modal
+    modal.classList.remove('hidden');
+
+    // Event listener untuk tombol (gunakan .onclick agar tidak menumpuk listener)
+    btnLater.onclick = closeModal;
+    btnNow.onclick = () => {
+        // Kirim sinyal ke main process untuk install
+        window.api.installUpdate();
+    };
 });
