@@ -13,26 +13,18 @@ const QRCode = require('qrcode');
 let mainWindow;
 let bot;
 
-// --- FUNGSI BARU UNTUK MENGIRIM LOG KE TAMPILAN ---
+// --- FUNGSI UNTUK MENGIRIM LOG KE TAMPILAN ---
 function sendLog(message) {
     if (mainWindow) {
         mainWindow.webContents.send('log-message', `[Updater] ${message}`);
     }
 }
 
-// --- TAMBAHKAN LOGGING UNTUK AUTO UPDATER ---
-autoUpdater.on('checking-for-update', () => {
-    sendLog('Mencari pembaruan...');
-});
-autoUpdater.on('update-available', (info) => {
-    sendLog(`Pembaruan tersedia: v${info.version}`);
-});
-autoUpdater.on('update-not-available', (info) => {
-    sendLog('Tidak ada pembaruan yang tersedia.');
-});
-autoUpdater.on('error', (err) => {
-    sendLog(`Error saat memperbarui: ${err.message}`);
-});
+// --- LOGGING UNTUK AUTO UPDATER ---
+autoUpdater.on('checking-for-update', () => sendLog('Mencari pembaruan...'));
+autoUpdater.on('update-available', (info) => sendLog(`Pembaruan tersedia: v${info.version}`));
+autoUpdater.on('update-not-available', (info) => sendLog('Tidak ada pembaruan yang tersedia.'));
+autoUpdater.on('error', (err) => sendLog(`Error saat memperbarui: ${err.message}`));
 autoUpdater.on('download-progress', (progressObj) => {
     let log_message = `Mengunduh: ${progressObj.percent.toFixed(2)}%`;
     log_message = log_message + ` (${(progressObj.bytesPerSecond / 1024).toFixed(2)} KB/s)`;
@@ -40,7 +32,6 @@ autoUpdater.on('download-progress', (progressObj) => {
 });
 autoUpdater.on('update-downloaded', (info) => {
     sendLog(`Pembaruan v${info.version} telah diunduh. Aplikasi akan di-restart untuk instalasi.`);
-    // Notifikasi default akan muncul di sini untuk me-restart
 });
 // ------------------------------------------------
 
@@ -64,8 +55,6 @@ function createWindow() {
 
 app.whenReady().then(() => {
     createWindow();
-    
-    // Sekarang kita panggil pengecekan setelah window dibuat
     autoUpdater.checkForUpdatesAndNotify();
 });
 
@@ -73,7 +62,7 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
-// ... Sisa kode Anda yang lain tetap sama ...
+
 // --- Handler untuk Login & Pendaftaran (Menghubungi Server) ---
 ipcMain.handle('login-attempt', async (event, { email, password }) => {
     try {
@@ -100,7 +89,8 @@ ipcMain.handle('register-attempt', async (event, { email, password, duration }) 
 
 // --- Handler untuk Jadwal (Lokal) ---
 ipcMain.handle('get-messages', async () => {
-    const filePath = path.join(__dirname, 'messages.json');
+    const userDataPath = app.getPath('userData');
+    const filePath = path.join(userDataPath, 'messages.json');
     if (!fs.existsSync(filePath)) {
         fs.writeFileSync(filePath, '[]', 'utf-8');
         return [];
@@ -110,7 +100,8 @@ ipcMain.handle('get-messages', async () => {
 });
 
 ipcMain.handle('save-messages', async (event, messages) => {
-    const filePath = path.join(__dirname, 'messages.json');
+    const userDataPath = app.getPath('userData');
+    const filePath = path.join(userDataPath, 'messages.json');
     fs.writeFileSync(filePath, JSON.stringify(messages, null, 2));
     return { success: true };
 });
@@ -122,7 +113,8 @@ ipcMain.handle('select-file', async () => {
         filters: [ { name: 'Media', extensions: ['jpg', 'png', 'mp4', 'pdf'] } ]
     });
     if (result.canceled) return null;
-    return './' + path.relative(__dirname, result.filePaths[0]).replace(/\\/g, '/');
+    // Kembalikan path absolut, ini sangat penting untuk build produksi
+    return result.filePaths[0]; 
 });
 
 // --- Handler Bot ---
@@ -131,7 +123,13 @@ ipcMain.on('start-bot', () => {
         mainWindow.webContents.send('log-message', 'INFO: Bot sudah berjalan.');
         return;
     }
-    bot = new WhatsAppBot();
+    
+    // Tentukan path untuk sesi WhatsApp di dalam folder userData
+    const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth');
+    
+    // Berikan path tersebut saat membuat instance bot baru
+    bot = new WhatsAppBot(sessionPath);
+    
     bot.on('qr', (qr) => {
         QRCode.toDataURL(qr, (err, url) => {
             if (err) return;
@@ -162,7 +160,8 @@ ipcMain.on('stop-bot', () => {
 
 ipcMain.on('reset-wa', () => {
     if (bot) { bot.stop(); bot = null; }
-    const sessionPath = path.join(__dirname, '.wwebjs_auth');
+    // Pastikan path yang dihapus sama dengan yang digunakan untuk membuat bot
+    const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth');
     if (fs.existsSync(sessionPath)) {
         fs.rmSync(sessionPath, { recursive: true, force: true });
         mainWindow.webContents.send('bot-stopped');
@@ -174,7 +173,8 @@ ipcMain.on('reset-wa', () => {
 
 ipcMain.on('run-sender', (event, { groupIds }) => {
     if (bot && bot.isReady()) {
-        const filePath = path.join(__dirname, 'messages.json');
+        const userDataPath = app.getPath('userData');
+        const filePath = path.join(userDataPath, 'messages.json');
         if (!fs.existsSync(filePath)) {
             mainWindow.webContents.send('log-message', '❌ Gagal memulai: file messages.json tidak ditemukan.');
             return;

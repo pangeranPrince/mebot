@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder"
+    "dist": "electron-builder --publish always"
   },
   "author": "pangeranPrince",
   "license": "ISC",
@@ -28,6 +28,9 @@
       "!dist/",
       "!functions/",
       "!*.local"
+    ],
+    "asarUnpack": [
+      "**/node_modules/puppeteer/.local-chromium/**/*"
     ],
     "directories": {
       "output": "dist"

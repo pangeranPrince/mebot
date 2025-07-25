@@ -3,14 +3,52 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const path = require('path');
 const fs = require('fs');
 const { EventEmitter } = require('events');
+const { app } = require('electron'); // Impor 'app' dari electron
+
+// Fungsi untuk mendapatkan path executable puppeteer yang benar
+const getPuppeteerExecPath = () => {
+    // Jika aplikasi sudah di-package (produksi)
+    if (app.isPackaged) {
+        // Path ke folder node_modules di dalam resources/app.asar.unpacked/
+        const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules');
+
+        // Cek apakah puppeteer ada di sana
+        if (fs.existsSync(path.join(unpackedDir, 'puppeteer'))) {
+            try {
+                // Gunakan puppeteer yang ada di sana untuk mendapatkan path executable
+                const puppeteer = require(path.join(unpackedDir, 'puppeteer'));
+                return puppeteer.executablePath();
+            } catch (e) {
+                console.error("Gagal memuat puppeteer dari unpacked dir:", e);
+                return null;
+            }
+        }
+    }
+    // Jika masih dalam development, gunakan path normal
+    try {
+        return require('puppeteer').executablePath();
+    } catch (e) {
+        console.error("Gagal memuat puppeteer dari node_modules biasa:", e);
+        return null;
+    }
+};
+
 
 class WhatsAppBot extends EventEmitter {
-    constructor() {
+    constructor(dataPath) {
         super();
+
+        const puppeteerExecPath = getPuppeteerExecPath();
+        if (!puppeteerExecPath) {
+             this.emit('log', '❌ FATAL: Tidak dapat menemukan executable Chromium!');
+        }
+
         this.client = new Client({
-            authStrategy: new LocalAuth(),
+            authStrategy: new LocalAuth({ dataPath: dataPath }),
             puppeteer: {
                 headless: true,
+                // Beri tahu puppeteer di mana lokasi chrome.exe
+                executablePath: puppeteerExecPath, 
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
@@ -26,6 +64,8 @@ class WhatsAppBot extends EventEmitter {
         this.ready = false;
         this.scheduledJobs = [];
     }
+
+    // ... sisa kode Anda dari sini ke bawah tetap sama persis ...
 
     initialize() {
         this.emit('log', '⏳ Menginisialisasi bot...');
@@ -56,18 +96,15 @@ class WhatsAppBot extends EventEmitter {
         if (!this.ready) return [];
         this.emit('log', '🔍 Mencari grup di mana bot adalah admin...');
         try {
-            const botId = this.client.info.wid._serialized; // Mendapatkan ID bot
+            const botId = this.client.info.wid._serialized;
             const chats = await this.client.getChats();
 
-            // Filter untuk grup di mana bot adalah seorang admin
             const adminGroups = chats.filter(chat => {
                 if (chat.isGroup) {
-                    // Temukan data partisipan untuk bot di dalam grup
                     const botParticipant = chat.participants.find(p => p.id._serialized === botId);
-                    // Kembalikan true hanya jika bot adalah partisipan dan seorang admin
                     return botParticipant && botParticipant.isAdmin;
                 }
-                return false; // Bukan grup, jadi abaikan
+                return false;
             });
 
             const groups = adminGroups.map(g => ({ id: g.id._serialized, name: g.name }));
@@ -77,7 +114,7 @@ class WhatsAppBot extends EventEmitter {
         } catch (error) {
             this.emit('log', `❌ GAGAL mengambil daftar grup: ${error.message}`);
             this.emit('log', 'INFO: Coba restart bot atau reset sesi jika masalah berlanjut.');
-            return []; // Kembalikan array kosong jika gagal
+            return [];
         }
     }
 
@@ -119,7 +156,7 @@ class WhatsAppBot extends EventEmitter {
                                 const content = Array.isArray(item.content) ? item.content.join('\n') : item.content;
                                 await groupChat.sendMessage(content);
                             } else if (['image', 'video', 'document'].includes(item.type)) {
-                                const mediaPath = path.join(__dirname, item.path);
+                                const mediaPath = item.path; 
                                 if (!fs.existsSync(mediaPath)) {
                                     this.emit('log', `❌ Gagal: File tidak ditemukan di ${item.path} untuk item "${item.id}"`);
                                     continue;
@@ -156,4 +193,3 @@ class WhatsAppBot extends EventEmitter {
 }
 
 module.exports = WhatsAppBot;
-
