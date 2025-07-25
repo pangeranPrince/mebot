@@ -29,6 +29,21 @@ const btnRunSender = document.getElementById('btn-run-sender');
 
 let messagesData = [];
 
+// --- Event Listener untuk memuat data saat halaman siap ---
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const credentials = await window.api.getSavedCredentials();
+        if (credentials) {
+            loginEmailInput.value = credentials.email;
+            loginPasswordInput.value = credentials.password;
+            document.getElementById('remember-me').checked = true;
+        }
+    } catch (error) {
+        console.error('Tidak dapat memuat kredensial tersimpan.', error);
+    }
+});
+
+
 // --- Fungsi Navigasi ---
 const showScreen = (screenToShow) => {
     allScreens.forEach(screen => screen.classList.add('hidden'));
@@ -44,6 +59,8 @@ btnBackToLogin.addEventListener('click', () => showScreen(loginScreen));
 btnLogin.addEventListener('click', async () => {
     const email = loginEmailInput.value;
     const password = loginPasswordInput.value;
+    const rememberMe = document.getElementById('remember-me').checked;
+
     if (!email || !password) {
         loginError.textContent = 'Email dan password harus diisi.';
         loginError.classList.remove('hidden');
@@ -53,7 +70,7 @@ btnLogin.addEventListener('click', async () => {
     btnLogin.disabled = true;
     loginError.classList.add('hidden');
 
-    const result = await window.api.loginAttempt({ email, password });
+    const result = await window.api.loginAttempt({ email, password, rememberMe });
 
     if (result.success) {
         showScreen(mainAppScreen);
@@ -265,27 +282,44 @@ window.api.on('update-groups', (groups) => {
     });
 });
 
-// BARU: Handler untuk menampilkan pop-up update kustom
 window.api.on('update-ready', (version) => {
-    const modal = document.getElementById('update-modal');
-    const title = document.getElementById('update-title');
-    const message = document.getElementById('update-message');
-    const btnLater = document.getElementById('btn-update-later');
-    const btnNow = document.getElementById('btn-update-now');
+    console.log(`✅ Event "update-ready" diterima di renderer untuk versi: ${version}`);
+    try {
+        const modal = document.getElementById('update-modal');
+        const title = document.getElementById('update-title');
+        const message = document.getElementById('update-message');
+        const btnLater = document.getElementById('btn-update-later');
+        const btnNow = document.getElementById('btn-update-now');
 
-    title.textContent = `Update MEBOT v${version}`;
-    message.textContent = `Versi ${version} telah siap. Mulai ulang aplikasi untuk menyelesaikan pembaruan.`;
-    
-    // Fungsi untuk menutup modal
-    const closeModal = () => modal.classList.add('hidden');
+        if (!modal || !title || !message || !btnLater || !btnNow) {
+            console.error('❌ Gagal menampilkan pop-up: satu atau lebih elemen HTML tidak ditemukan!');
+            addLog('ERROR: Gagal menampilkan pop-up update. Elemen UI hilang.');
+            return;
+        }
+        
+        console.log('✅ Semua elemen modal ditemukan. Menyiapkan konten...');
 
-    // Tampilkan modal
-    modal.classList.remove('hidden');
+        title.textContent = `Update MEBOT v${version}`;
+        message.textContent = `Versi ${version} telah siap. Mulai ulang aplikasi untuk menyelesaikan pembaruan.`;
+        
+        const closeModal = () => {
+            console.log('Tombol "Nanti" diklik. Menutup modal.');
+            modal.classList.add('hidden');
+        };
 
-    // Event listener untuk tombol (gunakan .onclick agar tidak menumpuk listener)
-    btnLater.onclick = closeModal;
-    btnNow.onclick = () => {
-        // Kirim sinyal ke main process untuk install
-        window.api.installUpdate();
-    };
+        const installNow = () => {
+            console.log('Tombol "Update & Restart" diklik. Mengirim sinyal ke main process...');
+            window.api.installUpdate();
+        };
+
+        btnLater.onclick = closeModal;
+        btnNow.onclick = installNow;
+        
+        console.log('✅ Menampilkan modal update...');
+        modal.classList.remove('hidden');
+
+    } catch (error) {
+        console.error('❌ Terjadi error saat mencoba menampilkan modal update:', error);
+        addLog(`FATAL ERROR: ${error.message}`);
+    }
 });

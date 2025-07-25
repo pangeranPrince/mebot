@@ -374,3 +374,15 @@ h2, h3 {
 #btn-save { background-color: var(--blue); color: white; }
 #btn-cancel { background-color: #6c757d; color: white; }
 
+/* style.css */
+.remember-me-container {
+    text-align: left;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+}
+.remember-me-container label {
+    margin-left: 8px;
+    font-size: 13px;
+}
+

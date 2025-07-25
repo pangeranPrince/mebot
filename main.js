@@ -4,14 +4,17 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const { machineIdSync } = require('node-machine-id');
+const keytar = require('keytar'); 
 
 const { autoUpdater } = require('electron-updater'); 
-
 const WhatsAppBot = require('./bot');
 const QRCode = require('qrcode');
 
 let mainWindow;
 let bot;
+
+const SERVICE_NAME = 'MEBOT';
+const ACCOUNT_NAME = 'userCredentials';
 
 function sendLog(message) {
     if (mainWindow) {
@@ -29,11 +32,13 @@ autoUpdater.on('download-progress', (progressObj) => {
     log_message = log_message + ` (${(progressObj.bytesPerSecond / 1024).toFixed(2)} KB/s)`;
     sendLog(log_message);
 });
-// DIUBAH: Saat update selesai diunduh, kirim event ke renderer
 autoUpdater.on('update-downloaded', (info) => {
     sendLog(`Pembaruan v${info.version} telah diunduh. Menunggu konfirmasi pengguna.`);
     if (mainWindow) {
+        console.log('✅ Jendela utama ditemukan. Mengirim event "update-ready" ke renderer...');
         mainWindow.webContents.send('update-ready', info.version);
+    } else {
+        console.error('❌ Jendela utama TIDAK ditemukan. Tidak dapat mengirim event "update-ready".');
     }
 });
 // ------------------------------------------------
@@ -58,30 +63,56 @@ function createWindow() {
 
 app.whenReady().then(() => {
     createWindow();
-    // DIUBAH: Panggil checkForUpdates secara manual agar tidak ada notif default
+    
     autoUpdater.checkForUpdates();
+
+    setInterval(() => {
+        autoUpdater.checkForUpdates();
+    }, 3600000); 
 });
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
-// BARU: Handler untuk memulai instalasi saat diminta oleh renderer
 ipcMain.on('install-update', () => {
     autoUpdater.quitAndInstall();
 });
 
 
 // --- Handler untuk Login & Pendaftaran (Menghubungi Server) ---
-ipcMain.handle('login-attempt', async (event, { email, password }) => {
+ipcMain.handle('login-attempt', async (event, { email, password, rememberMe }) => {
     try {
         const id = machineIdSync();
         const response = await axios.post(`${API_BASE_URL}/login`, {
             email, password, machineId: id,
         });
+
+        if (rememberMe) {
+            await keytar.setPassword(SERVICE_NAME, 'userEmail', email);
+            await keytar.setPassword(SERVICE_NAME, ACCOUNT_NAME, password);
+        } else {
+            await keytar.deletePassword(SERVICE_NAME, 'userEmail');
+            await keytar.deletePassword(SERVICE_NAME, ACCOUNT_NAME);
+        }
+
         return { success: true, ...response.data };
     } catch (error) {
         return { success: false, message: error.response?.data?.error || 'Tidak dapat terhubung ke server.' };
+    }
+});
+
+ipcMain.handle('get-saved-credentials', async () => {
+    try {
+        const email = await keytar.getPassword(SERVICE_NAME, 'userEmail');
+        const password = await keytar.getPassword(SERVICE_NAME, ACCOUNT_NAME);
+        if (email && password) {
+            return { email, password };
+        }
+        return null;
+    } catch (error) {
+        console.error('Gagal mengambil kredensial:', error);
+        return null;
     }
 });
 
