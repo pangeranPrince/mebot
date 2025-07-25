@@ -3,19 +3,13 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const path = require('path');
 const fs = require('fs');
 const { EventEmitter } = require('events');
-const { app } = require('electron'); // Impor 'app' dari electron
+const { app } = require('electron');
 
-// Fungsi untuk mendapatkan path executable puppeteer yang benar
 const getPuppeteerExecPath = () => {
-    // Jika aplikasi sudah di-package (produksi)
     if (app.isPackaged) {
-        // Path ke folder node_modules di dalam resources/app.asar.unpacked/
         const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules');
-
-        // Cek apakah puppeteer ada di sana
         if (fs.existsSync(path.join(unpackedDir, 'puppeteer'))) {
             try {
-                // Gunakan puppeteer yang ada di sana untuk mendapatkan path executable
                 const puppeteer = require(path.join(unpackedDir, 'puppeteer'));
                 return puppeteer.executablePath();
             } catch (e) {
@@ -24,7 +18,6 @@ const getPuppeteerExecPath = () => {
             }
         }
     }
-    // Jika masih dalam development, gunakan path normal
     try {
         return require('puppeteer').executablePath();
     } catch (e) {
@@ -32,7 +25,6 @@ const getPuppeteerExecPath = () => {
         return null;
     }
 };
-
 
 class WhatsAppBot extends EventEmitter {
     constructor(dataPath) {
@@ -45,29 +37,31 @@ class WhatsAppBot extends EventEmitter {
 
         this.client = new Client({
             authStrategy: new LocalAuth({ dataPath: dataPath }),
+            
+            webVersionCache: {
+              type: 'remote',
+              remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
+            },
+
             puppeteer: {
                 headless: true,
-                // Beri tahu puppeteer di mana lokasi chrome.exe
                 executablePath: puppeteerExecPath, 
+                
+                // =================== PERUBAHAN PENTING DI SINI ===================
+                // Argumen disederhanakan untuk stabilitas di Windows Desktop.
+                // Flag yang agresif seperti '--single-process' dan '--disable-gpu' dihapus.
                 args: [
                     '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--no-first-run',
-                    '--no-zygote',
-                    '--single-process',
-                    '--disable-gpu'
+                    '--disable-setuid-sandbox'
                 ],
+                // ===============================================================
             }
         });
         this.ready = false;
         this.scheduledJobs = [];
     }
 
-    // ... sisa kode Anda dari sini ke bawah tetap sama persis ...
-
-    initialize() {
+    async initialize() {
         this.emit('log', '⏳ Menginisialisasi bot...');
 
         this.client.on('qr', (qr) => {
@@ -85,9 +79,16 @@ class WhatsAppBot extends EventEmitter {
             this.emit('disconnected', reason);
         });
 
-        this.client.initialize();
+        try {
+            await this.client.initialize();
+        } catch (error) {
+            console.error('Gagal menginisialisasi client:', error);
+            this.emit('log', `❌ Gagal memulai bot: ${error.message}`);
+        }
     }
-
+    
+    // ... sisa kode Anda dari sini ke bawah tetap sama persis ...
+    
     isReady() {
         return this.ready;
     }
