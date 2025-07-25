@@ -6,22 +6,29 @@ const { EventEmitter } = require('events');
 const { app } = require('electron');
 
 const getPuppeteerExecPath = () => {
+    // Jika aplikasi sudah di-package (produksi)
     if (app.isPackaged) {
-        const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules');
-        if (fs.existsSync(path.join(unpackedDir, 'puppeteer'))) {
-            try {
-                const puppeteer = require(path.join(unpackedDir, 'puppeteer'));
-                return puppeteer.executablePath();
-            } catch (e) {
-                console.error("Gagal memuat puppeteer dari unpacked dir:", e);
-                return null;
+        // Path ke folder tempat puppeteer di-unpack
+        const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'puppeteer', '.local-chromium');
+        
+        if (fs.existsSync(unpackedDir)) {
+            // Cari folder versi di dalamnya, contoh 'win64-1045629'
+            const versionFolders = fs.readdirSync(unpackedDir);
+            const win64Folder = versionFolders.find(folder => folder.startsWith('win64-'));
+
+            if (win64Folder) {
+                const execPath = path.join(unpackedDir, win64Folder, 'chrome-win', 'chrome.exe');
+                if (fs.existsSync(execPath)) {
+                    return execPath; // Kembalikan path yang ditemukan
+                }
             }
         }
     }
+    // Jika masih dalam development, atau jika pencarian di atas gagal, gunakan cara default
     try {
         return require('puppeteer').executablePath();
     } catch (e) {
-        console.error("Gagal memuat puppeteer dari node_modules biasa:", e);
+        console.error("Gagal memuat puppeteer:", e);
         return null;
     }
 };
@@ -33,6 +40,8 @@ class WhatsAppBot extends EventEmitter {
         const puppeteerExecPath = getPuppeteerExecPath();
         if (!puppeteerExecPath) {
              this.emit('log', '❌ FATAL: Tidak dapat menemukan executable Chromium!');
+        } else {
+             this.emit('log', `ℹ️ Chromium path: ${puppeteerExecPath}`);
         }
 
         this.client = new Client({
@@ -46,15 +55,10 @@ class WhatsAppBot extends EventEmitter {
             puppeteer: {
                 headless: true,
                 executablePath: puppeteerExecPath, 
-                
-                // =================== PERUBAHAN PENTING DI SINI ===================
-                // Argumen disederhanakan untuk stabilitas di Windows Desktop.
-                // Flag yang agresif seperti '--single-process' dan '--disable-gpu' dihapus.
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
                 ],
-                // ===============================================================
             }
         });
         this.ready = false;

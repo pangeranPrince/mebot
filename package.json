@@ -13,6 +13,7 @@
     "axios": "^1.7.2",
     "electron-updater": "^6.2.1",
     "node-machine-id": "^1.1.12",
+    "puppeteer": "^24.15.0",
     "qrcode": "^1.5.3",
     "whatsapp-web.js": "^1.23.0"
   },
