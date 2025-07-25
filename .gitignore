@@ -1,0 +1,10 @@
+# Folder yang diabaikan
+node_modules/
+dist/
+
+# File cache dan sesi WhatsApp
+.wwebjs_auth/
+.wwebjs_cache/
+
+# File log
+*.log

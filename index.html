@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MEBOT</title> 
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="login-screen" class="screen">
+        <div class="form-container">
+            <h2>MEBOT Login</h2> 
+            <p>Silakan masuk untuk melanjutkan</p>
+            <input type="email" id="login-email" placeholder="Email">
+            <input type="password" id="login-password" placeholder="Password">
+            <button id="btn-login">Login</button>
+            <p id="login-error" class="error-message hidden"></p>
+            <p class="switch-screen-link">Belum punya akun? <a href="#" id="link-to-register">Daftar di sini</a></p>
+        </div>
+    </div>
+
+    <div id="register-screen" class="screen hidden">
+        <div class="form-container">
+            <h2>Pendaftaran Akun Baru</h2>
+            <input type="email" id="register-email" placeholder="Masukkan Email Anda">
+            <input type="password" id="register-password" placeholder="Buat Password Anda">
+            
+            <label>Pilih Durasi Langganan:</label>
+            <div class="subscription-options">
+                <label><input type="radio" name="duration" value="1" checked> 1 Bulan (Rp 200.000)</label>
+                <label><input type="radio" name="duration" value="3"> 3 Bulan (Rp 500.000)</label>
+                <label><input type="radio" name="duration" value="12"> 6 Bulan (Rp 750.000)</label>
+            </div>
+
+            <button id="btn-register">Lanjutkan ke Pembayaran</button>
+            <p id="register-error" class="error-message hidden"></p>
+            <p class="switch-screen-link">Sudah punya akun? <a href="#" id="link-to-login-from-register">Login di sini</a></p>
+        </div>
+    </div>
+
+    <div id="payment-screen" class="screen hidden">
+        <div class="form-container">
+            <h2>Instruksi Pembayaran</h2>
+            <p>Silakan transfer sejumlah:</p>
+            <h1 id="payment-amount" class="payment-details">Rp 0</h1>
+            <p>Ke rekening berikut:</p>
+            <div class="payment-details">
+                <strong>SMBC Indonesia: 9034-0490-745</strong><br>
+                <strong>a/n Dede Effi Jurtika</strong>
+            </div>
+            <p class="important-note">
+                PENTING: Setelah transfer, kirim bukti pembayaran ke CS kami di WhatsApp: 
+                <strong>0812-3456-7890</strong> untuk aktivasi akun.
+            </p>
+            <button id="btn-back-to-login">Saya Mengerti, Kembali ke Login</button>
+        </div>
+    </div>
+
+
+    <div id="main-app" class="hidden">
+        <div id="container">
+            <div id="left-panel">
+                <div class="schedule-title-container">
+                    <h2>MANAGEMENT JADWAL</h2>
+                    <button id="btn-add-task" title="Tambah Tugas Baru">+</button>
+                </div>
+                <div id="schedule-header"><span>NO</span><span>TUGAS</span><span>JADWAL</span><span>AKSI</span></div>
+                <div id="schedule-list"></div>
+                <div id="bottom-buttons">
+                    <button id="btn-start">START BOT</button>
+                    <button id="btn-stop">STOP BOT</button>
+                    <button id="btn-reset">RESET WHATSAPP</button>
+                </div>
+            </div>
+            <div id="right-panel">
+                <div id="group-selection-container">
+                    <h3>Pilih Grup Target (Bisa lebih dari satu)</h3>
+                    <div id="group-list"><p>Klik "Start Bot" untuk memuat daftar grup.</p></div>
+                    <button id="btn-run-sender" disabled>JALANKAN PENGIRIMAN</button>
+                </div>
+                <h2>LOG AKTIVITAS (v1.0.1)</h2> <div id="log-container">
+                    <div id="qr-code-container" class="hidden"></div>
+                    <textarea id="log-area" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">Edit Jadwal</h3>
+            <input type="hidden" id="edit-index">
+            <label for="edit-id">Tugas / ID</label>
+            <input type="text" id="edit-id" placeholder="e.g., masuk, promo-all">
+            <label for="edit-type">Type</label>
+            <select id="edit-type"><option value="text">Text</option><option value="image">Image</option><option value="video">Video</option><option value="document">Document</option></select>
+            <label for="edit-time">Time (HH:MM:SS)</label>
+            <input type="text" id="edit-time" placeholder="e.g., 11:30:00">
+            <label for="edit-path">Path (untuk image/video/doc)</label>
+            <div class="path-container"><input type="text" id="edit-path" placeholder="Pilih file media..."><button id="btn-browse-path">Cari...</button></div>
+            <label for="edit-content">Content / Caption</label>
+            <textarea id="edit-content" rows="6"></textarea>
+            <div class="modal-buttons"><button id="btn-save">Save</button><button id="btn-cancel">Cancel</button></div>
+        </div>
+    </div>
+
+    <script src="./renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,376 @@
+/* --- GAYA UNTUK LAYAR LOGIN, DAFTAR, BAYAR --- */
+.screen {
+    background-color: #121212;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.form-container {
+    width: 400px;
+    padding: 40px;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+    color: var(--text-color);
+}
+
+.form-container h2 {
+    color: var(--header-color);
+    margin-bottom: 10px;
+}
+
+.form-container p {
+    margin-bottom: 25px;
+}
+
+.form-container input[type="email"],
+.form-container input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    background-color: #3c3c3c;
+    color: white;
+    border: 1px solid #555;
+    box-sizing: border-box;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+.form-container button {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+}
+.form-container button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: var(--red);
+    margin-top: 15px;
+    font-weight: bold;
+    min-height: 20px;
+}
+
+.switch-screen-link {
+    margin-top: 20px;
+    font-size: 13px;
+}
+.switch-screen-link a {
+    color: var(--blue);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.subscription-options {
+    text-align: left;
+    margin-bottom: 20px;
+}
+.subscription-options label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.payment-details {
+    background-color: #333;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+#payment-amount {
+    color: var(--yellow);
+    letter-spacing: 2px;
+}
+.important-note {
+    background-color: rgba(240, 192, 48, 0.1);
+    border: 1px solid var(--yellow);
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 13px;
+}
+
+/* --- AKHIR GAYA LOGIN, DAFTAR, BAYAR --- */
+
+/* ... Sisa kode CSS Anda yang sudah ada sebelumnya diletakkan di bawah sini ... */
+/* style.css (Tambahkan atau modifikasi gaya ini) */
+:root {
+    --bg-color: #1e1e1e;
+    --panel-bg: #252526;
+    --border-color: #444;
+    --text-color: #ccc;
+    --header-color: #fff;
+    --green: #1b852d;
+    --red: #d12f2f;
+    --yellow: #f0c030;
+    --blue: #007acc;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #121212;
+    color: var(--text-color);
+    font-size: 14px;
+    overflow: hidden;
+}
+
+#container {
+    display: flex;
+    height: 100vh;
+    padding: 10px;
+    box-sizing: border-box;
+    gap: 10px;
+}
+
+h2, h3 {
+    color: var(--header-color);
+    text-align: center;
+    margin-top: 0;
+}
+
+/* Panel Kiri & Kanan */
+#left-panel, #right-panel {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+#left-panel {
+    width: 400px;
+    flex-shrink: 0;
+}
+
+#right-panel {
+    flex-grow: 1;
+}
+
+.schedule-title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.schedule-title-container h2 {
+    margin-bottom: 0;
+}
+#btn-add-task {
+    background-color: var(--green);
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 4px;
+    box-sizing: border-box;
+    transition: transform 0.1s ease;
+}
+#btn-add-task:active {
+    transform: scale(0.9);
+}
+
+
+/* Daftar Jadwal (Diperbarui) */
+#schedule-header {
+    display: grid;
+    /* Diperbarui: Kolom aksi lebih lebar */
+    grid-template-columns: 40px 1fr 80px 110px;
+    font-weight: bold;
+    padding: 8px 10px;
+    border-bottom: 2px solid var(--blue);
+    color: var(--header-color);
+}
+#schedule-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    font-family: 'Courier New', Courier, monospace;
+    border: 1px solid var(--border-color);
+    background-color: var(--panel-bg);
+}
+.schedule-item {
+    display: grid;
+    /* Diperbarui: Kolom aksi lebih lebar */
+    grid-template-columns: 40px 1fr 80px 110px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+    align-items: center;
+}
+
+/* --- BARU: Tombol Aksi (Edit & Hapus) --- */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+.action-buttons button {
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: white;
+    flex-grow: 1;
+}
+.btn-edit { background-color: var(--blue); }
+.btn-delete { background-color: var(--red); }
+/* --- AKHIR BARU --- */
+
+
+/* Tombol Bawah */
+#bottom-buttons { margin-top: 15px; }
+#bottom-buttons button, #btn-run-sender {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: transform 0.1s ease;
+}
+#bottom-buttons button:active, #btn-run-sender:active {
+    transform: scale(0.98);
+}
+
+#btn-start { background-color: var(--green); color: white; }
+#btn-stop { background-color: var(--red); color: white; }
+#btn-reset { background-color: var(--yellow); color: #1e1e1e; }
+#btn-run-sender { background-color: var(--blue); color: white; }
+#btn-run-sender:disabled { background-color: #555; cursor: not-allowed; }
+
+/* Panel Kanan */
+#group-selection-container {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+#group-list {
+    height: 150px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    background-color: var(--panel-bg);
+    padding: 10px;
+    border-radius: 5px;
+}
+.group-item { display: block; margin-bottom: 8px; }
+
+#log-container {
+    flex-grow: 1;
+    position: relative;
+}
+#qr-code-container {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(30, 30, 30, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+#qr-code-container img {
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+}
+#log-area {
+    width: 100%;
+    height: 100%;
+    background-color: var(--panel-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    box-sizing: border-box;
+    font-family: 'Courier New', Courier, monospace;
+    resize: none;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* Modal */
+.hidden { display: none !important; }
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-content {
+    background-color: var(--bg-color);
+    padding: 25px;
+    border-radius: 8px;
+    width: 500px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.modal-content label { font-weight: bold; margin-top: 5px; }
+.modal-content input, .modal-content select, .modal-content textarea {
+    width: 100%;
+    padding: 8px;
+    background-color: #3c3c3c;
+    color: white;
+    border: 1px solid #555;
+    box-sizing: border-box;
+    font-size: 14px;
+    border-radius: 4px;
+}
+/* --- BARU: Kontainer untuk Path dan Tombol Cari --- */
+.path-container {
+    display: flex;
+    gap: 10px;
+}
+.path-container input {
+    flex-grow: 1;
+}
+#btn-browse-path {
+    padding: 0 15px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+/* --- AKHIR BARU --- */
+.modal-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.modal-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+#btn-save { background-color: var(--blue); color: white; }
+#btn-cancel { background-color: #6c757d; color: white; }
+
