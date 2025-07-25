@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {
@@ -38,8 +38,8 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "nama-github-anda",
-      "repo": "nama-repo-aplikasi-anda"
+      "owner": "pangeranPrince",
+      "repo": "mebot"
     }
   }
 }
