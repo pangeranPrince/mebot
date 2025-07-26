@@ -19,12 +19,18 @@ const getPuppeteerExecPath = () => {
 class WhatsAppBot extends EventEmitter {
     constructor(dataPath) {
         super();
+        this.dataPath = dataPath;
+        this.client = null; 
+        this.ready = false;
+        this.scheduledJobs = [];
+    }
 
+    async initialize() {
         const puppeteerExecPath = getPuppeteerExecPath();
         this.emit('log', `ℹ️ Menggunakan browser dari path: ${puppeteerExecPath}`);
-
+        
         this.client = new Client({
-            authStrategy: new LocalAuth({ dataPath: dataPath }),
+            authStrategy: new LocalAuth({ dataPath: this.dataPath }),
             
             webVersionCache: {
               type: 'remote',
@@ -32,21 +38,18 @@ class WhatsAppBot extends EventEmitter {
             },
 
             puppeteer: {
-                // headless: true, // Opsi ini terkadang tidak berfungsi dengan baik
+                headless: true,
                 executablePath: puppeteerExecPath, 
                 args: [
-                    '--headless=new', // Memaksa mode headless yang baru dan lebih andal
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage'
+                    '--disable-dev-shm-usage',
+                    // Argumen ini penting untuk mencegah jendela browser muncul
+                    '--headless=new' 
                 ],
             }
         });
-        this.ready = false;
-        this.scheduledJobs = [];
-    }
-
-    async initialize() {
+        
         this.emit('log', '⏳ Menginisialisasi bot...');
 
         this.client.on('qr', (qr) => {
@@ -68,11 +71,7 @@ class WhatsAppBot extends EventEmitter {
             await this.client.initialize();
         } catch (error) {
             console.error('Gagal menginisialisasi client:', error);
-            // Tambahkan log yang lebih detail untuk error
             this.emit('log', `❌ Gagal memulai bot: ${error.message}`);
-            if (error.stack) {
-                this.emit('log', `Stack trace: ${error.stack}`);
-            }
         }
     }
     
@@ -81,7 +80,7 @@ class WhatsAppBot extends EventEmitter {
     }
 
     async getGroups() {
-        if (!this.ready) return [];
+        if (!this.ready || !this.client) return [];
         this.emit('log', '🔍 Mencari grup di mana bot adalah admin...');
         try {
             const botId = this.client.info.wid._serialized;
@@ -101,41 +100,33 @@ class WhatsAppBot extends EventEmitter {
             return groups;
         } catch (error) {
             this.emit('log', `❌ GAGAL mengambil daftar grup: ${error.message}`);
-            this.emit('log', 'INFO: Coba restart bot atau reset sesi jika masalah berlanjut.');
             return [];
         }
     }
 
     startSending(targetGroupIds, scheduledItems) {
-        if (!this.ready) {
+        if (!this.ready || !this.client) {
             this.emit('log', '❌ Bot tidak siap untuk mengirim pesan.');
             return;
         }
-
         this.emit('log', `▶️ Memulai proses pengiriman ke ${targetGroupIds.length} grup terpilih.`);
         this.clearScheduledJobs();
-
         this.client.getChats().then(chats => {
             const targetGroupChats = chats.filter(c => c.isGroup && targetGroupIds.includes(c.id._serialized));
-
             if (targetGroupChats.length === 0) {
                 this.emit('log', `🚫 Tidak ada grup yang cocok dengan ID yang dipilih.`);
                 return;
             }
-
             scheduledItems.forEach(item => {
                 const [hours, minutes, seconds] = item.time.split(':').map(Number);
                 const targetTime = new Date();
                 targetTime.setHours(hours, minutes, seconds || 0, 0);
-
                 let delayMs = targetTime.getTime() - new Date().getTime();
                 if (delayMs < 0) {
                     delayMs += 24 * 60 * 60 * 1000;
                 }
-
                 const sendTimeStr = new Date(Date.now() + delayMs).toLocaleTimeString('id-ID');
                 this.emit('log', `📌 jadwal "${item.id}" dikirim ~${sendTimeStr}`);
-
                 const job = setTimeout(async () => {
                     this.emit('log', `🚀 Mengirim pesan terjadwal: "${item.id}"`);
                     for (const groupChat of targetGroupChats) {
@@ -165,6 +156,7 @@ class WhatsAppBot extends EventEmitter {
     }
 
     clearScheduledJobs() {
+        if (!this.scheduledJobs) this.scheduledJobs = [];
         this.scheduledJobs.forEach(job => clearTimeout(job));
         this.scheduledJobs = [];
         this.emit('log', '🔄 Jadwal pengiriman sebelumnya telah dibersihkan.');

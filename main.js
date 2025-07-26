@@ -164,6 +164,7 @@ ipcMain.on('start-bot', () => {
     }
     const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth');
     bot = new WhatsAppBot(sessionPath);
+    
     bot.on('qr', (qr) => {
         QRCode.toDataURL(qr, (err, url) => {
             if (err) return;
@@ -180,7 +181,12 @@ ipcMain.on('start-bot', () => {
         mainWindow.webContents.send('log-message', '🔌 Bot terputus.');
         bot = null;
     });
-    bot.initialize();
+
+    // Perubahan di sini untuk menangani fungsi async
+    bot.initialize().catch(err => {
+        console.error("Gagal menginisialisasi bot dari main.js:", err);
+        mainWindow.webContents.send('log-message', `❌ FATAL ERROR saat initialize: ${err.message}`);
+    });
 });
 
 ipcMain.on('stop-bot', () => {
