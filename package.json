@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "2.0.3",
+  "version": "2.1.4",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {
@@ -31,17 +31,23 @@
       "!functions/",
       "!*.local"
     ],
-"asarUnpack": [
-  "**/node_modules/puppeteer/**/*"
-],
+    "asarUnpack": [
+      "**/node_modules/keytar/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/puppeteer/.local-chromium",
+        "to": "puppeteer/chromium",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "directories": {
       "output": "dist"
     },
     "win": {
-      "target": [
-        "nsis",
-        "zip" 
-      ],
+      "target": "nsis",
       "icon": "logo.ico"
     },
     "nsis": {
