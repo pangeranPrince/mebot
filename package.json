@@ -42,13 +42,13 @@
         "nsis",
         "zip"
       ],
-      "icon": "logo.ico"
+      "icon": "logo.ico",
+      "requestExecutionLevel": "requireAdministrator"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": true,
-      "allowToChangeInstallationDirectory": true,
-      "requestExecutionLevel": "requireAdministrator"
+      "allowToChangeInstallationDirectory": true
     },
     "publish": {
       "provider": "github",
