@@ -16,6 +16,26 @@ let bot;
 const SERVICE_NAME = 'MEBOT';
 const ACCOUNT_NAME = 'userCredentials';
 
+// Anda perlu memindahkan fungsi ini ke sini agar bisa diakses oleh handler 'start-bot'
+const getPuppeteerExecPath = () => {
+    if (app.isPackaged) {
+        try {
+            const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'puppeteer', '.local-chromium');
+            if (fs.existsSync(unpackedDir)) {
+                const versionFolders = fs.readdirSync(unpackedDir);
+                const win64Folder = versionFolders.find(folder => folder.startsWith('win64-'));
+                if (win64Folder) {
+                    const execPath = path.join(unpackedDir, win64Folder, 'chrome-win', 'chrome.exe');
+                    if (fs.existsSync(execPath)) { return execPath; }
+                }
+            }
+        } catch (error) { console.error('Gagal menemukan puppeteer di unpacked dir:', error); }
+    }
+    try { return require('puppeteer').executablePath(); } 
+    catch (e) { console.error("Gagal memuat puppeteer:", e); return null; }
+};
+
+
 function sendLog(message) {
     if (mainWindow) {
         mainWindow.webContents.send('log-message', `[Updater] ${message}`);
@@ -158,10 +178,21 @@ ipcMain.handle('select-file', async () => {
 
 // --- Handler Bot ---
 ipcMain.on('start-bot', () => {
+    // Pengecekan file puppeteer sebelum start bot
+    const puppeteerPath = getPuppeteerExecPath();
+    if (!fs.existsSync(puppeteerPath)) {
+        dialog.showErrorBox(
+            'Error Kritis', 
+            'Komponen browser (Puppeteer) tidak ditemukan. Ini mungkin disebabkan oleh Antivirus. Coba install ulang aplikasi atau tambahkan folder instalasi MEBOT ke daftar pengecualian Antivirus Anda.'
+        );
+        return;
+    }
+
     if (bot && bot.isReady()) {
         mainWindow.webContents.send('log-message', 'INFO: Bot sudah berjalan.');
         return;
     }
+
     const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth');
     bot = new WhatsAppBot(sessionPath);
     bot.on('qr', (qr) => {

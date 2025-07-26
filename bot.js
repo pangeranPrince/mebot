@@ -5,43 +5,18 @@ const fs = require('fs');
 const { EventEmitter } = require('events');
 const { app } = require('electron');
 
-const getPuppeteerExecPath = () => {
-    // Jika aplikasi sudah di-package (produksi)
-    if (app.isPackaged) {
-        // Path ke folder tempat puppeteer di-unpack
-        const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'puppeteer', '.local-chromium');
-        
-        if (fs.existsSync(unpackedDir)) {
-            // Cari folder versi di dalamnya, contoh 'win64-1045629'
-            const versionFolders = fs.readdirSync(unpackedDir);
-            const win64Folder = versionFolders.find(folder => folder.startsWith('win64-'));
-
-            if (win64Folder) {
-                const execPath = path.join(unpackedDir, win64Folder, 'chrome-win', 'chrome.exe');
-                if (fs.existsSync(execPath)) {
-                    return execPath; // Kembalikan path yang ditemukan
-                }
-            }
-        }
-    }
-    // Jika masih dalam development, atau jika pencarian di atas gagal, gunakan cara default
-    try {
-        return require('puppeteer').executablePath();
-    } catch (e) {
-        console.error("Gagal memuat puppeteer:", e);
-        return null;
-    }
-};
+// Fungsi ini sengaja tidak diletakkan di sini, karena 'app' hanya tersedia di main process.
+// Fungsi ini harus dipanggil dari main.js
+// Namun, class ini akan menerima executablePath yang sudah ditemukan.
 
 class WhatsAppBot extends EventEmitter {
-    constructor(dataPath) {
+    constructor(dataPath, executablePath) { // Terima executablePath dari main.js
         super();
 
-        const puppeteerExecPath = getPuppeteerExecPath();
-        if (!puppeteerExecPath) {
-             this.emit('log', '❌ FATAL: Tidak dapat menemukan executable Chromium!');
+        if (!executablePath) {
+             this.emit('log', '❌ FATAL: Path executable Chromium tidak disediakan!');
         } else {
-             this.emit('log', `ℹ️ Chromium path: ${puppeteerExecPath}`);
+             this.emit('log', `ℹ️ Chromium path: ${executablePath}`);
         }
 
         this.client = new Client({
@@ -54,7 +29,7 @@ class WhatsAppBot extends EventEmitter {
 
             puppeteer: {
                 headless: true,
-                executablePath: puppeteerExecPath, 
+                executablePath: executablePath, // Gunakan path yang diberikan
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
@@ -91,8 +66,6 @@ class WhatsAppBot extends EventEmitter {
         }
     }
     
-    // ... sisa kode Anda dari sini ke bawah tetap sama persis ...
-    
     isReady() {
         return this.ready;
     }
@@ -118,7 +91,6 @@ class WhatsAppBot extends EventEmitter {
             return groups;
         } catch (error) {
             this.emit('log', `❌ GAGAL mengambil daftar grup: ${error.message}`);
-            this.emit('log', 'INFO: Coba restart bot atau reset sesi jika masalah berlanjut.');
             return [];
         }
     }

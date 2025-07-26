@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {
@@ -38,8 +38,17 @@
       "output": "dist"
     },
     "win": {
-      "target": "nsis",
+      "target": [
+        "nsis",
+        "zip"
+      ],
       "icon": "logo.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "requestExecutionLevel": "requireAdministrator"
     },
     "publish": {
       "provider": "github",
