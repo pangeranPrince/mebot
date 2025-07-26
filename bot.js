@@ -5,30 +5,85 @@ const fs = require('fs');
 const { EventEmitter } = require('events');
 const { app } = require('electron');
 
+/**
+ * Fungsi yang diperbarui untuk menemukan path executable Puppeteer
+ * dengan log diagnostik yang detail.
+ */
 const getPuppeteerExecPath = () => {
-    // Jika aplikasi sudah di-package (produksi)
-    if (app.isPackaged) {
-        // Path ke folder tempat puppeteer di-unpack
-        const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'puppeteer', '.local-chromium');
-        
-        if (fs.existsSync(unpackedDir)) {
-            // Cari folder versi di dalamnya, contoh 'win64-1045629'
-            const versionFolders = fs.readdirSync(unpackedDir);
-            const win64Folder = versionFolders.find(folder => folder.startsWith('win64-'));
-
-            if (win64Folder) {
-                const execPath = path.join(unpackedDir, win64Folder, 'chrome-win', 'chrome.exe');
-                if (fs.existsSync(execPath)) {
-                    return execPath; // Kembalikan path yang ditemukan
-                }
-            }
+    // 1. Jika dalam mode development, gunakan path default.
+    if (!app.isPackaged) {
+        try {
+            return require('puppeteer').executablePath();
+        } catch (e) {
+            console.error("Gagal memuat puppeteer (dev):", e);
+            return null;
         }
     }
-    // Jika masih dalam development, atau jika pencarian di atas gagal, gunakan cara default
+
+    // 2. Jika sudah di-package (produksi), cari secara manual.
     try {
-        return require('puppeteer').executablePath();
-    } catch (e) {
-        console.error("Gagal memuat puppeteer:", e);
+        // Base directory di dalam folder instalasi
+        const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'puppeteer');
+        
+        // Kemungkinan lokasi folder cache browser
+        const potentialPaths = [
+            path.join(unpackedDir, '.local-chromium'),
+            path.join(unpackedDir, '.cache', 'puppeteer')
+        ];
+
+        let browserDir;
+        for (const p of potentialPaths) {
+            if (fs.existsSync(p)) {
+                browserDir = p;
+                break;
+            }
+        }
+        
+        // --- LOG DIAGNOSTIK ---
+        // Kirim log ini ke renderer process agar kita bisa melihatnya
+        const log = (msg) => {
+            const win = require('electron').BrowserWindow.getAllWindows()[0];
+            if (win) {
+                win.webContents.send('log-message', `[DIAGNOSTIC] ${msg}`);
+            }
+            console.log(`[DIAGNOSTIC] ${msg}`);
+        };
+
+        log(`Mencari browser di dalam aplikasi yang sudah di-package...`);
+        log(`Base unpack dir: ${unpackedDir}`);
+        log(`Ditemukan browser cache di: ${browserDir || 'TIDAK DITEMUKAN'}`);
+
+        if (!browserDir) {
+            log('❌ FATAL: Folder cache browser tidak ditemukan di dalam app.asar.unpacked.');
+            return null;
+        }
+
+        const versionFolders = fs.readdirSync(browserDir);
+        log(`Folder yang ada di dalam: ${versionFolders.join(', ')}`);
+        
+        const win64Folder = versionFolders.find(folder => folder.startsWith('win64-'));
+        if (!win64Folder) {
+            log('❌ FATAL: Folder versi (e.g., win64-xxxx) tidak ditemukan.');
+            return null;
+        }
+        log(`Menggunakan folder versi: ${win64Folder}`);
+
+        const execPath = path.join(browserDir, win64Folder, 'chrome-win', 'chrome.exe');
+        log(`Path lengkap yang akan digunakan: ${execPath}`);
+
+        if (fs.existsSync(execPath)) {
+            log('✅ Berhasil! File chrome.exe ditemukan.');
+            return execPath;
+        } else {
+            log('❌ FATAL: File chrome.exe TIDAK ADA di path yang sudah dibuat.');
+            return null;
+        }
+    } catch (err) {
+        console.error('[DIAGNOSTIC] Terjadi error saat mencari executable:', err);
+        const win = require('electron').BrowserWindow.getAllWindows()[0];
+        if (win) {
+            win.webContents.send('log-message', `[DIAGNOSTIC] ❌ ERROR: ${err.message}`);
+        }
         return null;
     }
 };
@@ -39,9 +94,9 @@ class WhatsAppBot extends EventEmitter {
 
         const puppeteerExecPath = getPuppeteerExecPath();
         if (!puppeteerExecPath) {
-             this.emit('log', '❌ FATAL: Tidak dapat menemukan executable Chromium!');
+             this.emit('log', '❌ Gagal menemukan executable Chromium setelah pencarian mendalam.');
         } else {
-             this.emit('log', `ℹ️ Chromium path: ${puppeteerExecPath}`);
+             this.emit('log', `ℹ️ Menggunakan Chromium dari path: ${puppeteerExecPath}`);
         }
 
         this.client = new Client({
@@ -57,7 +112,8 @@ class WhatsAppBot extends EventEmitter {
                 executablePath: puppeteerExecPath, 
                 args: [
                     '--no-sandbox',
-                    '--disable-setuid-sandbox'
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage' // Argumen tambahan untuk stabilitas
                 ],
             }
         });
@@ -90,8 +146,6 @@ class WhatsAppBot extends EventEmitter {
             this.emit('log', `❌ Gagal memulai bot: ${error.message}`);
         }
     }
-    
-    // ... sisa kode Anda dari sini ke bawah tetap sama persis ...
     
     isReady() {
         return this.ready;
