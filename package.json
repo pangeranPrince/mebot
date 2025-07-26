@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "2.1.4",
+  "version": "2.0.6",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {
@@ -32,16 +32,7 @@
       "!*.local"
     ],
     "asarUnpack": [
-      "**/node_modules/keytar/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "node_modules/puppeteer/.local-chromium",
-        "to": "puppeteer/chromium",
-        "filter": [
-          "**/*"
-        ]
-      }
+      "**/node_modules/puppeteer/**/*"
     ],
     "directories": {
       "output": "dist"

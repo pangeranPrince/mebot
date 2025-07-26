@@ -6,7 +6,32 @@ const { EventEmitter } = require('events');
 const { app } = require('electron');
 
 /**
- * Fungsi yang disederhanakan untuk mendapatkan path executable Puppeteer.
+ * Fungsi pencarian rekursif untuk menemukan file chrome.exe.
+ * Ini jauh lebih andal daripada menggunakan path yang tetap.
+ */
+const findChromeExecutable = (dir) => {
+    try {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+            const filePath = path.join(dir, file);
+            if (fs.statSync(filePath).isDirectory()) {
+                const result = findChromeExecutable(filePath);
+                if (result) return result;
+            } else if (path.basename(filePath).toLowerCase() === 'chrome.exe') {
+                return filePath;
+            }
+        }
+    } catch (error) {
+        // Abaikan error seperti EPERM (permission denied)
+        return null;
+    }
+    return null;
+};
+
+
+/**
+ * Fungsi yang diperbarui untuk menemukan path executable Puppeteer
+ * dengan metode pencarian rekursif yang cerdas.
  */
 const getPuppeteerExecPath = () => {
     // 1. Jika dalam mode development, gunakan path default.
@@ -19,10 +44,9 @@ const getPuppeteerExecPath = () => {
         }
     }
 
-    // 2. Jika sudah di-package (produksi), cari di folder extraResources.
+    // 2. Jika sudah di-package (produksi), cari secara manual di dalam folder unpack.
     try {
-        // Path ini ditentukan oleh konfigurasi "extraResources" di package.json
-        const resourcesDir = path.join(process.resourcesPath, 'puppeteer', 'chromium');
+        const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'puppeteer');
         
         const log = (msg) => {
             const win = require('electron').BrowserWindow.getAllWindows()[0];
@@ -30,32 +54,29 @@ const getPuppeteerExecPath = () => {
             console.log(`[DIAGNOSTIC] ${msg}`);
         };
 
-        log(`Mencari browser di lokasi extraResources: ${resourcesDir}`);
+        log(`Mencari browser di dalam aplikasi yang sudah di-package...`);
+        log(`Base unpack dir: ${unpackedDir}`);
 
-        if (!fs.existsSync(resourcesDir)) {
-            log(`❌ FATAL: Folder ${resourcesDir} tidak ditemukan. Periksa konfigurasi 'extraResources' di package.json.`);
+        if (!fs.existsSync(unpackedDir)) {
+            log(`❌ FATAL: Folder puppeteer tidak ditemukan di ${unpackedDir}. Pastikan asarUnpack sudah benar.`);
             return null;
         }
 
-        const versionFolders = fs.readdirSync(resourcesDir);
-        const win64Folder = versionFolders.find(folder => folder.startsWith('win64-'));
-        
-        if (!win64Folder) {
-            log(`❌ FATAL: Folder versi (e.g., win64-xxxx) tidak ditemukan di dalam ${resourcesDir}.`);
-            return null;
-        }
+        log('Memulai pencarian rekursif untuk chrome.exe...');
+        const execPath = findChromeExecutable(unpackedDir);
 
-        const execPath = path.join(resourcesDir, win64Folder, 'chrome-win', 'chrome.exe');
-
-        if (fs.existsSync(execPath)) {
+        if (execPath) {
             log(`✅ Berhasil! File chrome.exe ditemukan di: ${execPath}`);
             return execPath;
         } else {
-            log(`❌ FATAL: File chrome.exe TIDAK ADA di path yang diharapkan: ${execPath}`);
+            log('❌ FATAL: Pencarian rekursif gagal menemukan chrome.exe di dalam folder puppeteer.');
             return null;
         }
+
     } catch (err) {
         console.error('[DIAGNOSTIC] Terjadi error saat mencari executable:', err);
+        const win = require('electron').BrowserWindow.getAllWindows()[0];
+        if (win) win.webContents.send('log-message', `[DIAGNOSTIC] ❌ ERROR: ${err.message}`);
         return null;
     }
 };
@@ -85,7 +106,7 @@ class WhatsAppBot extends EventEmitter {
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage'
+                    '--disable-dev-shm-usage' // Argumen tambahan untuk stabilitas
                 ],
             }
         });
