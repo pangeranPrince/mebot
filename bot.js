@@ -3,20 +3,13 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const path = require('path');
 const fs = require('fs');
 const { EventEmitter } = require('events');
-const { app } = require('electron');
-
-// Fungsi ini sengaja tidak diletakkan di sini, karena 'app' hanya tersedia di main process.
-// Fungsi ini harus dipanggil dari main.js
-// Namun, class ini akan menerima executablePath yang sudah ditemukan.
 
 class WhatsAppBot extends EventEmitter {
-    constructor(dataPath, executablePath) { // Terima executablePath dari main.js
+    constructor(dataPath, executablePath) {
         super();
 
         if (!executablePath) {
              this.emit('log', '❌ FATAL: Path executable Chromium tidak disediakan!');
-        } else {
-             this.emit('log', `ℹ️ Chromium path: ${executablePath}`);
         }
 
         this.client = new Client({
@@ -29,7 +22,7 @@ class WhatsAppBot extends EventEmitter {
 
             puppeteer: {
                 headless: true,
-                executablePath: executablePath, // Gunakan path yang diberikan
+                executablePath: executablePath,
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'

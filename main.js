@@ -85,7 +85,7 @@ app.whenReady().then(() => {
 
     setInterval(() => {
         autoUpdater.checkForUpdates();
-    }, 3600000); 
+    }, 3600000); // Cek setiap 1 jam
 });
 
 app.on('window-all-closed', () => {
@@ -191,7 +191,6 @@ ipcMain.on('start-bot', () => {
 
     const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth');
     
-    // Berikan puppeteerPath yang sudah ditemukan ke constructor WhatsAppBot
     bot = new WhatsAppBot(sessionPath, puppeteerPath);
 
     bot.on('qr', (qr) => {
