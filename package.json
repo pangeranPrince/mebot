@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {
@@ -43,7 +43,7 @@
         "zip"
       ],
       "icon": "logo.ico",
-      "requestExecutionLevel": "requireAdministrator"
+      "requestedExecutionLevel": "requireAdministrator"
     },
     "nsis": {
       "oneClick": false,

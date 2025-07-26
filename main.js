@@ -16,7 +16,7 @@ let bot;
 const SERVICE_NAME = 'MEBOT';
 const ACCOUNT_NAME = 'userCredentials';
 
-// Anda perlu memindahkan fungsi ini ke sini agar bisa diakses oleh handler 'start-bot'
+// Fungsi andal untuk menemukan path executable puppeteer
 const getPuppeteerExecPath = () => {
     if (app.isPackaged) {
         try {
@@ -55,10 +55,7 @@ autoUpdater.on('download-progress', (progressObj) => {
 autoUpdater.on('update-downloaded', (info) => {
     sendLog(`Pembaruan v${info.version} telah diunduh. Menunggu konfirmasi pengguna.`);
     if (mainWindow) {
-        console.log('✅ Jendela utama ditemukan. Mengirim event "update-ready" ke renderer...');
         mainWindow.webContents.send('update-ready', info.version);
-    } else {
-        console.error('❌ Jendela utama TIDAK ditemukan. Tidak dapat mengirim event "update-ready".');
     }
 });
 // ------------------------------------------------
@@ -178,9 +175,8 @@ ipcMain.handle('select-file', async () => {
 
 // --- Handler Bot ---
 ipcMain.on('start-bot', () => {
-    // Pengecekan file puppeteer sebelum start bot
     const puppeteerPath = getPuppeteerExecPath();
-    if (!fs.existsSync(puppeteerPath)) {
+    if (!puppeteerPath || !fs.existsSync(puppeteerPath)) {
         dialog.showErrorBox(
             'Error Kritis', 
             'Komponen browser (Puppeteer) tidak ditemukan. Ini mungkin disebabkan oleh Antivirus. Coba install ulang aplikasi atau tambahkan folder instalasi MEBOT ke daftar pengecualian Antivirus Anda.'
@@ -194,7 +190,10 @@ ipcMain.on('start-bot', () => {
     }
 
     const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth');
-    bot = new WhatsAppBot(sessionPath);
+    
+    // Berikan puppeteerPath yang sudah ditemukan ke constructor WhatsAppBot
+    bot = new WhatsAppBot(sessionPath, puppeteerPath);
+
     bot.on('qr', (qr) => {
         QRCode.toDataURL(qr, (err, url) => {
             if (err) return;
@@ -211,6 +210,7 @@ ipcMain.on('start-bot', () => {
         mainWindow.webContents.send('log-message', '🔌 Bot terputus.');
         bot = null;
     });
+    
     bot.initialize();
 });
 
