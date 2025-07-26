@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {
@@ -37,14 +37,11 @@
     "directories": {
       "output": "dist"
     },
-    "win": {
-      "target": [
-        "msi",
-        "zip"
-      ],
-      "icon": "logo.ico",
-      "requestedExecutionLevel": "requireAdministrator"
-    },
+"win": {
+  "target": "msi", 
+  "icon": "logo.ico",
+  "requestedExecutionLevel": "requireAdministrator"
+},
     "nsis": {
       "oneClick": false,
       "perMachine": true,
