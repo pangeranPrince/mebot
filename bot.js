@@ -4,81 +4,15 @@ const path = require('path');
 const fs = require('fs');
 const { EventEmitter } = require('events');
 const { app } = require('electron');
+const puppeteer = require('puppeteer-core');
 
 /**
- * Fungsi pencarian rekursif untuk menemukan file chrome.exe.
- * Ini jauh lebih andal daripada menggunakan path yang tetap.
- */
-const findChromeExecutable = (dir) => {
-    try {
-        const files = fs.readdirSync(dir);
-        for (const file of files) {
-            const filePath = path.join(dir, file);
-            if (fs.statSync(filePath).isDirectory()) {
-                const result = findChromeExecutable(filePath);
-                if (result) return result;
-            } else if (path.basename(filePath).toLowerCase() === 'chrome.exe') {
-                return filePath;
-            }
-        }
-    } catch (error) {
-        // Abaikan error seperti EPERM (permission denied)
-        return null;
-    }
-    return null;
-};
-
-
-/**
- * Fungsi yang diperbarui untuk menemukan path executable Puppeteer
- * dengan metode pencarian rekursif yang cerdas.
+ * Fungsi yang disederhanakan untuk mendapatkan path executable dari Electron.
  */
 const getPuppeteerExecPath = () => {
-    // 1. Jika dalam mode development, gunakan path default.
-    if (!app.isPackaged) {
-        try {
-            return require('puppeteer').executablePath();
-        } catch (e) {
-            console.error("Gagal memuat puppeteer (dev):", e);
-            return null;
-        }
-    }
-
-    // 2. Jika sudah di-package (produksi), cari secara manual di dalam folder unpack.
-    try {
-        const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'puppeteer');
-        
-        const log = (msg) => {
-            const win = require('electron').BrowserWindow.getAllWindows()[0];
-            if (win) win.webContents.send('log-message', `[DIAGNOSTIC] ${msg}`);
-            console.log(`[DIAGNOSTIC] ${msg}`);
-        };
-
-        log(`Mencari browser di dalam aplikasi yang sudah di-package...`);
-        log(`Base unpack dir: ${unpackedDir}`);
-
-        if (!fs.existsSync(unpackedDir)) {
-            log(`❌ FATAL: Folder puppeteer tidak ditemukan di ${unpackedDir}. Pastikan asarUnpack sudah benar.`);
-            return null;
-        }
-
-        log('Memulai pencarian rekursif untuk chrome.exe...');
-        const execPath = findChromeExecutable(unpackedDir);
-
-        if (execPath) {
-            log(`✅ Berhasil! File chrome.exe ditemukan di: ${execPath}`);
-            return execPath;
-        } else {
-            log('❌ FATAL: Pencarian rekursif gagal menemukan chrome.exe di dalam folder puppeteer.');
-            return null;
-        }
-
-    } catch (err) {
-        console.error('[DIAGNOSTIC] Terjadi error saat mencari executable:', err);
-        const win = require('electron').BrowserWindow.getAllWindows()[0];
-        if (win) win.webContents.send('log-message', `[DIAGNOSTIC] ❌ ERROR: ${err.message}`);
-        return null;
-    }
+    // Menggunakan browser Chromium yang dibundel dengan Electron
+    // puppeteer-core akan secara otomatis menemukan path ini.
+    return puppeteer.executablePath();
 };
 
 class WhatsAppBot extends EventEmitter {
@@ -86,11 +20,7 @@ class WhatsAppBot extends EventEmitter {
         super();
 
         const puppeteerExecPath = getPuppeteerExecPath();
-        if (!puppeteerExecPath) {
-             this.emit('log', '❌ Gagal menemukan executable Chromium setelah pencarian mendalam.');
-        } else {
-             this.emit('log', `ℹ️ Menggunakan Chromium dari path: ${puppeteerExecPath}`);
-        }
+        this.emit('log', `ℹ️ Menggunakan browser dari path: ${puppeteerExecPath}`);
 
         this.client = new Client({
             authStrategy: new LocalAuth({ dataPath: dataPath }),
@@ -106,7 +36,7 @@ class WhatsAppBot extends EventEmitter {
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage' // Argumen tambahan untuk stabilitas
+                    '--disable-dev-shm-usage'
                 ],
             }
         });
@@ -136,7 +66,11 @@ class WhatsAppBot extends EventEmitter {
             await this.client.initialize();
         } catch (error) {
             console.error('Gagal menginisialisasi client:', error);
+            // Tambahkan log yang lebih detail untuk error
             this.emit('log', `❌ Gagal memulai bot: ${error.message}`);
+            if (error.stack) {
+                this.emit('log', `Stack trace: ${error.stack}`);
+            }
         }
     }
     

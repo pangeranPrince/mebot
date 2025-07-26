@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "2.0.6",
+  "version": "2.1.5",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {
@@ -14,7 +14,7 @@
     "electron-updater": "^6.2.1",
     "keytar": "^7.9.0",
     "node-machine-id": "^1.1.12",
-    "puppeteer": "^24.15.0",
+    "puppeteer-core": "^22.12.1",
     "qrcode": "^1.5.3",
     "whatsapp-web.js": "1.23.0"
   },
@@ -27,12 +27,10 @@
     "productName": "MEBOT",
     "files": [
       "**/*",
+      ".puppeteerrc.cjs",
       "!dist/",
       "!functions/",
       "!*.local"
-    ],
-    "asarUnpack": [
-      "**/node_modules/puppeteer/**/*"
     ],
     "directories": {
       "output": "dist"
