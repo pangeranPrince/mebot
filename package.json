@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "1.1.8",
+  "version": "2.0.1",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "node-machine-id": "^1.1.12",
     "puppeteer": "^24.15.0",
     "qrcode": "^1.5.3",
-    "whatsapp-web.js": "^1.23.0"
+    "whatsapp-web.js": "1.23.0"
   },
   "devDependencies": {
     "electron": "^31.2.1",
@@ -31,19 +31,26 @@
       "!functions/",
       "!*.local"
     ],
-    "asarUnpack": [
-      "**/node_modules/puppeteer/.local-chromium/**/*"
-    ],
+"asarUnpack": [
+  "**/node_modules/puppeteer/**/*"
+],
     "directories": {
       "output": "dist"
     },
     "win": {
       "target": [
         "nsis",
-        "zip"
+        "zip" 
       ],
-      "icon": "logo.ico",
-      "requestedExecutionLevel": "requireAdministrator"
+      "icon": "logo.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "installerIcon": "logo.ico",
+      "uninstallerIcon": "logo.ico"
     },
     "publish": {
       "provider": "github",
