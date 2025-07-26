@@ -7,12 +7,13 @@ const { app } = require('electron');
 const puppeteer = require('puppeteer-core');
 
 /**
- * Fungsi yang disederhanakan untuk mendapatkan path executable dari Electron.
+ * Fungsi yang diperbarui untuk secara eksplisit menggunakan executable Electron.
+ * Ini adalah metode yang paling andal.
  */
 const getPuppeteerExecPath = () => {
-    // Menggunakan browser Chromium yang dibundel dengan Electron
-    // puppeteer-core akan secara otomatis menemukan path ini.
-    return puppeteer.executablePath();
+    // process.execPath adalah path absolut ke file .exe aplikasi MEBOT,
+    // yang juga merupakan browser Chromium yang akan digunakan.
+    return process.execPath;
 };
 
 class WhatsAppBot extends EventEmitter {
