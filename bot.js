@@ -38,13 +38,13 @@ class WhatsAppBot extends EventEmitter {
             },
 
             puppeteer: {
-                headless: true,
+                // headless: true, // Opsi ini kita ganti dengan argumen di bawah
                 executablePath: puppeteerExecPath, 
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    // Argumen ini penting untuk mencegah jendela browser muncul
+                    // Argumen ini PENTING untuk memaksa mode headless yang baru dan andal
                     '--headless=new' 
                 ],
             }
