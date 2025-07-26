@@ -32,9 +32,10 @@ class WhatsAppBot extends EventEmitter {
             },
 
             puppeteer: {
-                headless: true,
+                // headless: true, // Opsi ini terkadang tidak berfungsi dengan baik
                 executablePath: puppeteerExecPath, 
                 args: [
+                    '--headless=new', // Memaksa mode headless yang baru dan lebih andal
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage'
