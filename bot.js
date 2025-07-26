@@ -6,8 +6,32 @@ const { EventEmitter } = require('events');
 const { app } = require('electron');
 
 /**
+ * Fungsi pencarian rekursif untuk menemukan file chrome.exe.
+ * Ini jauh lebih andal daripada menggunakan path yang tetap.
+ */
+const findChromeExecutable = (dir) => {
+    try {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+            const filePath = path.join(dir, file);
+            if (fs.statSync(filePath).isDirectory()) {
+                const result = findChromeExecutable(filePath);
+                if (result) return result;
+            } else if (path.basename(filePath).toLowerCase() === 'chrome.exe') {
+                return filePath;
+            }
+        }
+    } catch (error) {
+        // Abaikan error seperti EPERM (permission denied) untuk beberapa folder sistem
+        return null;
+    }
+    return null;
+};
+
+
+/**
  * Fungsi yang diperbarui untuk menemukan path executable Puppeteer
- * dengan log diagnostik yang detail.
+ * dengan metode pencarian yang lebih cerdas.
  */
 const getPuppeteerExecPath = () => {
     // 1. Jika dalam mode development, gunakan path default.
@@ -22,68 +46,38 @@ const getPuppeteerExecPath = () => {
 
     // 2. Jika sudah di-package (produksi), cari secara manual.
     try {
-        // Base directory di dalam folder instalasi
         const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'puppeteer');
         
-        // Kemungkinan lokasi folder cache browser
-        const potentialPaths = [
-            path.join(unpackedDir, '.local-chromium'),
-            path.join(unpackedDir, '.cache', 'puppeteer')
-        ];
-
-        let browserDir;
-        for (const p of potentialPaths) {
-            if (fs.existsSync(p)) {
-                browserDir = p;
-                break;
-            }
-        }
-        
         // --- LOG DIAGNOSTIK ---
-        // Kirim log ini ke renderer process agar kita bisa melihatnya
         const log = (msg) => {
             const win = require('electron').BrowserWindow.getAllWindows()[0];
-            if (win) {
-                win.webContents.send('log-message', `[DIAGNOSTIC] ${msg}`);
-            }
+            if (win) win.webContents.send('log-message', `[DIAGNOSTIC] ${msg}`);
             console.log(`[DIAGNOSTIC] ${msg}`);
         };
 
         log(`Mencari browser di dalam aplikasi yang sudah di-package...`);
         log(`Base unpack dir: ${unpackedDir}`);
-        log(`Ditemukan browser cache di: ${browserDir || 'TIDAK DITEMUKAN'}`);
 
-        if (!browserDir) {
-            log('❌ FATAL: Folder cache browser tidak ditemukan di dalam app.asar.unpacked.');
+        if (!fs.existsSync(unpackedDir)) {
+            log(`❌ FATAL: Folder puppeteer tidak ditemukan di ${unpackedDir}. Pastikan asarUnpack sudah benar.`);
             return null;
         }
 
-        const versionFolders = fs.readdirSync(browserDir);
-        log(`Folder yang ada di dalam: ${versionFolders.join(', ')}`);
-        
-        const win64Folder = versionFolders.find(folder => folder.startsWith('win64-'));
-        if (!win64Folder) {
-            log('❌ FATAL: Folder versi (e.g., win64-xxxx) tidak ditemukan.');
-            return null;
-        }
-        log(`Menggunakan folder versi: ${win64Folder}`);
+        log('Memulai pencarian rekursif untuk chrome.exe...');
+        const execPath = findChromeExecutable(unpackedDir);
 
-        const execPath = path.join(browserDir, win64Folder, 'chrome-win', 'chrome.exe');
-        log(`Path lengkap yang akan digunakan: ${execPath}`);
-
-        if (fs.existsSync(execPath)) {
-            log('✅ Berhasil! File chrome.exe ditemukan.');
+        if (execPath) {
+            log(`✅ Berhasil! File chrome.exe ditemukan di: ${execPath}`);
             return execPath;
         } else {
-            log('❌ FATAL: File chrome.exe TIDAK ADA di path yang sudah dibuat.');
+            log('❌ FATAL: Pencarian rekursif gagal menemukan chrome.exe di dalam folder puppeteer.');
             return null;
         }
+
     } catch (err) {
         console.error('[DIAGNOSTIC] Terjadi error saat mencari executable:', err);
         const win = require('electron').BrowserWindow.getAllWindows()[0];
-        if (win) {
-            win.webContents.send('log-message', `[DIAGNOSTIC] ❌ ERROR: ${err.message}`);
-        }
+        if (win) win.webContents.send('log-message', `[DIAGNOSTIC] ❌ ERROR: ${err.message}`);
         return null;
     }
 };
