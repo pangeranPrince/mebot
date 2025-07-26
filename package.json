@@ -1,6 +1,6 @@
 {
   "name": "mebot",
-  "version": "1.1.4",
+  "version": "1.0.3",
   "description": "Aplikasi MEBOT",
   "main": "main.js",
   "scripts": {
@@ -14,7 +14,7 @@
     "electron-updater": "^6.2.1",
     "keytar": "^7.9.0",
     "node-machine-id": "^1.1.12",
-    "puppeteer": "^22.10.0",
+    "puppeteer": "^24.15.0",
     "qrcode": "^1.5.3",
     "whatsapp-web.js": "^1.23.0"
   },
@@ -38,17 +38,8 @@
       "output": "dist"
     },
     "win": {
-      "target": [
-        "nsis",
-        "zip"
-      ],
-      "icon": "logo.ico",
-      "requestedExecutionLevel": "requireAdministrator"
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": true,
-      "allowToChangeInstallationDirectory": true
+      "target": "nsis",
+      "icon": "logo.ico"
     },
     "publish": {
       "provider": "github",
